@@ -30,6 +30,20 @@ class HBNBCommand(cmd.Cmd):
              'latitude': float, 'longitude': float
             }
 
+    def num_or_float(self, arg: str):
+        """
+        Method to convert str to int or float
+        """
+        try:
+            return int(arg)
+        except Exception:
+            pass
+
+        try:
+            return float(arg)
+        except Exception:
+            return arg
+
     def preloop(self):
         """Prints if isatty is false"""
         if not sys.__stdin__.isatty():
@@ -115,48 +129,32 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, args):
         """ Create an object of any class"""
-        new_args = args.split(" ")
-        if not new_args[0]:
+        if not args:
             print("** class name missing **")
             return
-        elif new_args[0] not in HBNBCommand.classes:
+        
+        args = args.split(' ')
+        className = args[0]
+
+        if className not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
-        new_instance = HBNBCommand.classes[new_args[0]]()
-        for arg in new_args[1:]:
-            arg_split = arg.split('=')
-            if len(arg_split) < 2:
-                continue
 
-            arg_name = arg_split[0]
-            arg_value = arg_split[1]
+        # Getting attributes
+        attributes = {}
+        for attr in args[1:]:
+            new_dict = attr.split('=', 1)
+            attributes[new_dict[0]] = new_dict[1]
 
-            value = None
-            if '.' in arg_value and arg_value.replace('.', '').isdigit():
-                value = float(arg_value)
-            elif arg_value.isdigit():
-                value = int(arg_value)
-            else:
-                value = arg_value.replace('\"', '').replace('_', ' ')
+        new_instance = HBNBCommand.classes[className]()
 
-            setattr(new_instance, arg_name, value)
+        for key, value in attributes.items():
+            value = value.strip("\"'").replace("_", " ")
+            value = self.num_or_float(value)
+            setattr(new_instance, key, value)
 
-        # for i in range(1, len(new_args)):
-        #     nre_args = new_args[i].split("=")
-        #     try:
-        #         if nre_args[1][0] == "\"":
-        #             nre_args[1] = nre_args[1].replace("\"","")
-        #             nre_args[1] = nre_args[1].replace("_"," ")
-        #         elif nre_args[1].isdigit() and "." in nre_args[1]:
-        #             nre_args[1] = float(nre_args[1])
-        #         else:
-        #             nre_args[1] = int(nre_args[1])
-
-        #     except:
-        #         pass
-        #     setattr(new_instance,nre_args[0],nre_args[1])
-        storage.save()
         print(new_instance.id)
+        new_instance.save()
 
     def help_create(self):
         """ Help information for the create method """
@@ -219,7 +217,7 @@ class HBNBCommand(cmd.Cmd):
         key = c_name + "." + c_id
 
         try:
-            del (storage.__objects[key])
+            del(storage.all()[key])
             storage.save()
         except KeyError:
             print("** no instance found **")
@@ -238,11 +236,10 @@ class HBNBCommand(cmd.Cmd):
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in storage._FileStorage__objects.items():
-                if k.split('.')[0] == args:
-                    print_list.append(str(v))
+            for k, v in storage.all(args).items():
+                print_list.append(str(v))
         else:
-            for k, v in storage._FileStorage__objects.items():
+            for k, v in storage.all().items():
                 print_list.append(str(v))
 
         print(print_list)
@@ -291,7 +288,7 @@ class HBNBCommand(cmd.Cmd):
         key = c_name + "." + c_id
 
         # determine if key is present
-        if key not in storage.__objects:
+        if key not in storage.all():
             print("** no instance found **")
             return
 
@@ -325,7 +322,7 @@ class HBNBCommand(cmd.Cmd):
             args = [att_name, att_val]
 
         # retrieve dictionary of current objects
-        new_dict = storage.__objects[key]
+        new_dict = storage.all()[key]
 
         # iterate through attr names and values
         for i, att_name in enumerate(args):
@@ -351,7 +348,6 @@ class HBNBCommand(cmd.Cmd):
         """ Help information for the update class """
         print("Updates an object with new information")
         print("Usage: update <className> <id> <attName> <attVal>\n")
-
 
 if __name__ == "__main__":
     HBNBCommand().cmdloop()
