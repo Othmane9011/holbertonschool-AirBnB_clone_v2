@@ -13,7 +13,7 @@ class FileStorage:
         return {
             k: v
             for k, v in FileStorage.__objects.items()
-            if cls is None or isinstance(v, cls) 
+            if cls is None or isinstance(v, cls)
         }
 
     def new(self, obj):
@@ -28,20 +28,21 @@ class FileStorage:
             for key, val in temp.items():
                 temp[key] = val.to_dict()
             json.dump(temp, f)
+
     def delete(self, obj=None):
         """delete"""
         if obj is None:
             return
-        
+
         key = None
         for k, v in self.__objects.items():
             if v == obj:
                 key = k
                 break
-            
+
         if key:
             del self.__objects[key]
-      
+
     def reload(self):
         """Loads storage dictionary from file"""
         from models.base_model import BaseModel
@@ -62,6 +63,7 @@ class FileStorage:
             with open(FileStorage.__file_path, 'r') as f:
                 temp = json.load(f)
                 for key, val in temp.items():
-                        self.__objects[key] = classes[val['__class__']](**val)
+                    self.__objects[key] = classes[val['__class__']](**val)
+
         except FileNotFoundError:
             pass
